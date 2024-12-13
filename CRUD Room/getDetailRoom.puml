@@ -1,0 +1,44 @@
+@startuml getRoomDetail
+    participant Alice
+    participant Auth
+    participant RoomController
+    participant RoomService
+    participant RoomRepository
+    participant Database
+
+    Alice->>Auth: GET /api/rooms/:id
+    activate Auth
+    
+    Auth->>Auth: Verify token
+    alt Token invalid
+        Auth-->>Alice: 401 Forbidden (Bạn không có quyền thực hiện hành động này)
+    else Token valid
+        Auth->>RoomController: Token valid
+        activate RoomController
+        RoomController->>RoomService: getRoomDetail(id)
+        activate RoomService
+        RoomService->>RoomRepository: findRoomById(id)
+        activate RoomRepository
+        RoomRepository->>Database: SELECT * FROM rooms WHERE id = :id
+        activate Database
+        
+        alt Room not found
+            Database-->>RoomRepository: No data
+            RoomRepository-->>RoomService: null
+            RoomService-->>RoomController: Room not found
+            RoomController-->>Alice: 404 Not Found (Không tồn tại room với id =:id)
+        else Room found
+            Database-->>RoomRepository: Room data
+            RoomRepository-->>RoomService: Room object
+            RoomService-->>RoomController: Room details
+            RoomController-->>Alice: 200 OK (Room data)
+        end
+        
+        deactivate Database
+        deactivate RoomRepository
+        deactivate RoomService
+    end
+    
+    deactivate RoomController
+    deactivate Auth
+@enduml

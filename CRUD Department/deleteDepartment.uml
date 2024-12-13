@@ -1,0 +1,36 @@
+@startuml
+    participant Alice
+    participant Auth
+    participant DepartmentController
+    participant DepartmentService
+    participant DepartmentRepository
+    participant Database
+
+    Alice->>Auth: DELETE /api/departments
+    Note over Alice,Auth: Authorization: Bearer <access_token>
+    Auth->>Auth: Verify token
+    
+    alt invalid token
+        Auth-->>Alice: 401: Ban khong co quyen thuc hien hanh dong nay
+    else valid token
+        Auth->>DepartmentController: Forward request with validated token
+        DepartmentController->>DepartmentService: deleteDepartment(ids)
+        
+        DepartmentService->>DepartmentRepository: findDepartmentByIds(ids)
+        DepartmentRepository->>Database: Select department data
+        Database-->>DepartmentRepository: Return department data
+        
+        alt department not found
+            DepartmentRepository-->>DepartmentService: Return not found
+            DepartmentService-->>DepartmentController: Return 404 error
+            DepartmentController-->>Alice: 404: Phong ban khong ton tai
+        else department found
+            DepartmentService->>DepartmentRepository: deleteDepartment(ids)
+            DepartmentRepository->>Database: DELETE department data
+            Database-->>DepartmentRepository: Confirm delete
+            DepartmentRepository-->>DepartmentService: Return success
+            DepartmentService-->>DepartmentController: Return success
+            DepartmentController-->>Alice: 200: Delete department thanh cong
+        end
+    end
+@enduml

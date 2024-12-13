@@ -1,0 +1,42 @@
+@startuml
+    participant Alice
+    participant Auth
+    participant DepartmentController
+    participant DepartmentService
+    participant DepartmentRepository
+    participant Database
+
+    Alice->>Auth: PUT /api/departments/:id with token
+    Note over Alice,Auth: Authorization: Bearer <access_token>
+
+    Auth->>Auth: Verify token
+    alt Invalid token
+        Auth-->>Alice: 403: Ban khong co quyen thuc hien hanh dong nay
+    else Valid token
+        Auth-->>DepartmentController: Forward request with validated token
+        Note over DepartmentController: companyId: number<br>name: string
+
+        DepartmentController->>DepartmentService: updateDepartment(departmentData)
+        DepartmentService->>DepartmentService: validateDepartmentData(departmentData)
+        alt Invalid data
+            DepartmentService-->>DepartmentController: Return 400 error
+            DepartmentController-->>Alice: 400: Du lieu gui len khong hop le
+        else Valid data
+            DepartmentService->>DepartmentRepository: findDepartmentById(id)
+            DepartmentRepository->>Database: SELECT department data
+            Database-->>DepartmentRepository: Return department data
+            alt department not found
+                DepartmentRepository-->>DepartmentService: Return not found
+                DepartmentService-->>DepartmentController: Return 404 error
+                DepartmentController-->>Alice: 404: Phong ban khong ton tai
+            else department found
+                DepartmentService->>DepartmentRepository: save(departmentData)
+                DepartmentRepository->>Database: UPDATE department data
+                Database-->>DepartmentRepository: Confirm update
+                DepartmentRepository-->>DepartmentService: Return success
+                DepartmentService-->>DepartmentController: Return success
+                DepartmentController-->>Alice: 200: Update department thanh cong
+            end
+        end
+    end
+@enduml

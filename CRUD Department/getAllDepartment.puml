@@ -1,0 +1,26 @@
+@startuml getAllDepartments
+    participant Alice
+    participant Auth
+    participant DepartmentController
+    participant DepartmentService
+    participant DepartmentRepository
+    participant Database
+
+    Alice->>Auth: GET /api/departments with token
+    Note over Alice,Auth: Authorization: Bearer token<br>searchText, pageSize, pageNo
+
+    Auth->>Auth: validateToken(access_token)
+    alt Invalid token
+        Auth-->>Alice: 403: Ban khong co quyen thuc hien hanh dong nay
+    else Valid token
+        Auth-->>DepartmentController: Forward request with validated token
+        DepartmentController-->DepartmentService: getAllDepartments(requestParam)
+        DepartmentService->>DepartmentRepository: findAllDepartments(requestParam)
+        DepartmentRepository->>Database: Query all departments
+        Database-->DepartmentRepository: Return all departments and count
+        DepartmentRepository-->>DepartmentService: Return all departments and total count
+        DepartmentService->>DepartmentService: Calculate totalPage
+        DepartmentService-->>DepartmentController: Return departments data with pagination info
+        DepartmentController-->>Alice: 200: { searchText, totalPage, pageSize, pageNo, company_id, name}
+    end
+@enduml

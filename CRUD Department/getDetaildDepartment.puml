@@ -1,0 +1,44 @@
+@startuml getDepartmentDetail
+    participant Alice
+    participant Auth
+    participant DepartmentController
+    participant DepartmentService
+    participant DepartmentRepository
+    participant Database
+
+    Alice->>Auth: GET /api/departments/:id
+    activate Auth
+    
+    Auth->>Auth: Verify token
+    alt Token invalid
+        Auth-->>Alice: 401 Forbidden (Bạn không có quyền thực hiện hành động này)
+    else Token valid
+        Auth->>DepartmentController: Token valid
+        activate DepartmentController
+        DepartmentController->>DepartmentService: getDepartmentDetail(id)
+        activate DepartmentService
+        DepartmentService->>DepartmentRepository: findDepartmentById(id)
+        activate DepartmentRepository
+        DepartmentRepository->>Database: SELECT * FROM departments WHERE id = :id
+        activate Database
+        
+        alt Department not found
+            Database-->>DepartmentRepository: No data
+            DepartmentRepository-->>DepartmentService: null
+            DepartmentService-->>DepartmentController: Department not found
+            DepartmentController-->>Alice: 404 Not Found (Không tồn tại Department với id =:id)
+        else Department found
+            Database-->>DepartmentRepository: Department data
+            DepartmentRepository-->>DepartmentService: Department object
+            DepartmentService-->>DepartmentController: Department details
+            DepartmentController-->>Alice: 200 OK (Department data)
+        end
+        
+        deactivate Database
+        deactivate DepartmentRepository
+        deactivate DepartmentService
+    end
+    
+    deactivate DepartmentController
+    deactivate Auth
+@enduml

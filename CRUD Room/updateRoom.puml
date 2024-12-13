@@ -1,0 +1,42 @@
+@startuml
+    participant Alice
+    participant Auth
+    participant RoomController
+    participant RoomService
+    participant RoomRepository
+    participant Database
+
+    Alice->>Auth: PUT /api/rooms/:id with token
+    Note over Alice,Auth: Authorization: Bearer <access_token>
+
+    Auth->>Auth: Verify token
+    alt Invalid token
+        Auth-->>Alice: 401: Ban khong co quyen thuc hien hanh dong nay
+    else Valid token
+        Auth->>RoomController: Forward request with validated token
+        Note over RoomController: roomName: string<br>numSeat: string<br>location: string
+
+        RoomController->>RoomService: updateRoom(roomData)
+        RoomService->>RoomService: validateRoomData(roomData)
+        alt Invalid data
+            RoomService-->>RoomController: Return 400 error
+            RoomController-->>Alice: 400: Du lieu gui len khong hop le
+        else Valid data
+            RoomService->>RoomRepository: findRoomById(id)
+            RoomRepository->>Database: SELECT room data
+            Database-->>RoomRepository: Return room data
+            alt Room not found
+                RoomRepository-->>RoomService: Return not found
+                RoomService-->>RoomController: Return 404 error
+                RoomController-->>Alice: 404: Phong khong ton tai
+            else Room found
+                RoomService->>RoomRepository: saveRoom(roomData)
+                RoomRepository->>Database: UPDATE room data
+                Database-->>RoomRepository: Confirm update
+                RoomRepository-->>RoomService: Return success
+                RoomService-->>RoomController: Return success
+                RoomController-->>Alice: 200: Update room thanh cong
+            end
+        end
+    end
+@enduml

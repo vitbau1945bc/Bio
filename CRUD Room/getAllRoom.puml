@@ -1,0 +1,28 @@
+@startuml getAllRooms
+    participant Alice
+    participant Auth
+    participant RoomController
+    participant RoomService
+    participant RoomRepository
+    participant Database
+
+    Alice->>Auth: GET /api/rooms with token and query params
+    Note over Alice,Auth: Authorization: Bearer <access_token>
+    note over Alice,Auth: searchText: string<br>numSeat: number<br>location: string<br>pageSize: number<br>pageNo: number
+    
+
+    Auth->>Auth: Verify token
+    alt Invalid token
+        Auth-->>Alice: 401: Ban khong co quyen thuc hien hanh dong nay
+    else Valid token
+        Auth->>RoomController: Forward request with validated token
+        RoomController->>RoomService: getAllRooms(searchParams)
+        RoomService->>RoomRepository: findRooms(searchParams)
+        RoomRepository->>Database: SELECT rooms with filters and pagination
+        Database-->>RoomRepository: Return filtered rooms and count
+        RoomRepository-->>RoomService: Return rooms data and total count
+        RoomService->>RoomService: Calculate totalPage
+        RoomService-->>RoomController: Return rooms data with pagination info
+        RoomController-->>Alice: 200: { searchText, numSeat, location, totalPage, pageSize, pageNo, rooms: [...] }
+    end
+@enduml
